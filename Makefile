@@ -1,31 +1,62 @@
-# Compiler
+# Compiler and flags
 CC = gcc
+CFLAGS = -Wall -Iinclude
+LDFLAGS =
 
 # Directories
-INCLUDE_DIR = include
-SERVER_DIR = server
-CLIENT_DIR = client
+OBJDIR = obj
+CLIENT_DIR = client_d
+SERVER_DIR = server_d
 
-# Flags
-CFLAGS = -I$(INCLUDE_DIR) -Wall -Wextra
-
-# Output
-SERVER_OUTPUT = server.out
-CLIENT_OUTPUT = client.out
-
-# Sources
-SERVER_SRC = $(SERVER_DIR)/server.c
+# Source files
 CLIENT_SRC = $(CLIENT_DIR)/client.c
+SERVER_SRC = $(SERVER_DIR)/server.c
+CSOCK_SRC = include/csock.c
 
-# Targets
-all: server client
+# Object files
+CLIENT_OBJ = $(OBJDIR)/client.o
+SERVER_OBJ = $(OBJDIR)/server.o
+CSOCK_OBJ = $(OBJDIR)/csock.o
 
-server: $(SERVER_SRC)
-	$(CC) $(CFLAGS) $(SERVER_SRC) -o $(SERVER_OUTPUT)
+# Executables
+CLIENT_BIN = client
+SERVER_BIN = server
 
-client: $(CLIENT_SRC)
-	$(CC) $(CFLAGS) $(CLIENT_SRC) -o $(CLIENT_OUTPUT)
+# Default target
+all: $(CLIENT_BIN) $(SERVER_BIN)
 
-# Clean up
+# Ensure the object directory exists
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+# Build the client executable
+$(CLIENT_BIN): $(OBJDIR) $(CLIENT_OBJ) $(CSOCK_OBJ)
+	$(CC) $(CFLAGS) -o $@ $(CLIENT_OBJ) $(CSOCK_OBJ) $(LDFLAGS)
+
+# Build the server executable
+$(SERVER_BIN): $(OBJDIR) $(SERVER_OBJ) $(CSOCK_OBJ)
+	$(CC) $(CFLAGS) -o $@ $(SERVER_OBJ) $(CSOCK_OBJ) $(LDFLAGS)
+
+# Compile client source
+$(OBJDIR)/client.o: $(CLIENT_SRC) include/csock.h
+	$(CC) $(CFLAGS) -c $(CLIENT_SRC) -o $@
+
+# Compile server source
+$(OBJDIR)/server.o: $(SERVER_SRC) include/csock.h
+	$(CC) $(CFLAGS) -c $(SERVER_SRC) -o $@
+
+# Compile csock source
+$(OBJDIR)/csock.o: $(CSOCK_SRC) include/csock.h
+	$(CC) $(CFLAGS) -c $(CSOCK_SRC) -o $@
+
+# Build only the client
+client: $(CLIENT_BIN)
+
+# Build only the server
+server: $(SERVER_BIN)
+
+# Clean up build artifacts
 clean:
-	rm -f $(SERVER_OUTPUT) $(CLIENT_OUTPUT)
+	rm -f $(OBJDIR)/*.o $(CLIENT_BIN) $(SERVER_BIN)
+
+.PHONY: all clean client server
